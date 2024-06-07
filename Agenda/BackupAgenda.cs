@@ -1,44 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
-namespace Agenda
+namespace AgendaConsole
 {
     internal class BackupAgenda
     {
-        public static String nomeArquivo = "dados.txt";
-        public static void SalvarDados(ref String[] nome, ref String[] email, ref int tamanho, ref String[] telefone)
+        public static string nomeArquivo = "dados.txt";
+
+        public static void SalvarDados(ref string[] nome, ref string[] email, ref int tamanho, ref List<string>[] telefones)
         {
-            StreamWriter sr = new StreamWriter(nomeArquivo);
-            for (int i = 0; i < tamanho; i++)
+            using (StreamWriter sr = new StreamWriter(nomeArquivo))
             {
-                sr.WriteLine(nome[i] + "-" + email[i] + "-" + telefone[i]);
+                for (int i = 0; i < tamanho; i++)
+                {
+                    sr.WriteLine(nome[i] + "§" + email[i] + "§" + string.Join("|", telefones[i]));
+                }
             }
-            sr.Close();
         }
-        public static void RestaurarDados(ref String[] nome, ref String[] email, ref int tamanho, ref String[] telefone)
+
+        public static void RestaurarDados(ref string[] nome, ref string[] email, ref int tamanho, ref List<string>[] telefones)
         {
             tamanho = 0;
-            int pos = 0;
-            int pos2 = 0;
-
-            StreamReader sr = new StreamReader(nomeArquivo);
-            string line = sr.ReadLine();
-
-            while(line != null)
+            try
             {
-                //pos vai armazenar a posiçao em que achou o caracter
-                pos = line.IndexOf("-");
-                pos2 = line.IndexOf("-", pos+1);
-                nome[tamanho] = line.Substring(0, pos);
-                email[tamanho] = line.Substring(pos + 1, pos);
-                telefone[tamanho] = line.Substring(pos2+1);
-                tamanho++;
-                line = sr.ReadLine();
+                using (StreamReader sr = new StreamReader(nomeArquivo))
+                {
+                    string line = sr.ReadLine();
+                    while (line != null)
+                    {
+                        int pos = line.IndexOf('§');
+                        int pos2 = line.IndexOf('§', pos + 1);
+
+                        // Verifica se ambos os delimitadores são encontrados
+                        if (pos != -1 && pos2 != -1)
+                        {
+                            nome[tamanho] = line.Substring(0, pos);
+                            email[tamanho] = line.Substring(pos + 1, pos2 - pos - 1);
+                            string telefonesStr = line.Substring(pos2 + 1);
+                            telefones[tamanho] = new List<string>(telefonesStr.Split('|'));
+
+                            tamanho++;
+                        }
+
+                        line = sr.ReadLine();
+                    }
+                }
             }
-            sr.Close ();
+            catch (Exception e)
+            {
+                Console.WriteLine("Erro ao restaurar dados: " + e.Message);
+            }
         }
     }
 }
